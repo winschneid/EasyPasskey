@@ -4,10 +4,43 @@ import android.content.Context
 import androidx.activity.ComponentActivity
 import com.auth0.android.Auth0
 import com.auth0.android.authentication.AuthenticationAPIClient
+import com.auth0.android.authentication.AuthenticationException
+import com.auth0.android.callback.Callback
 import com.auth0.android.provider.WebAuthProvider
-import com.auth0.android.provider.await
 import com.auth0.android.result.Credentials
 import com.ks.app.easypasskey.R
+import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
+
+// Coroutine extension for Auth0 WebAuthProvider
+private suspend fun WebAuthProvider.AuthenticationRequest.await(activity: ComponentActivity): Credentials {
+    return suspendCancellableCoroutine { continuation ->
+        start(activity, object : Callback<Credentials, AuthenticationException> {
+            override fun onSuccess(result: Credentials) {
+                continuation.resume(result)
+            }
+
+            override fun onFailure(error: AuthenticationException) {
+                continuation.resumeWithException(error)
+            }
+        })
+    }
+}
+
+private suspend fun WebAuthProvider.LogoutRequest.await(activity: ComponentActivity) {
+    return suspendCancellableCoroutine { continuation ->
+        start(activity, object : Callback<Void?, AuthenticationException> {
+            override fun onSuccess(result: Void?) {
+                continuation.resume(Unit)
+            }
+
+            override fun onFailure(error: AuthenticationException) {
+                continuation.resumeWithException(error)
+            }
+        })
+    }
+}
 
 interface AuthRepository {
     suspend fun login(): Result<Credentials>

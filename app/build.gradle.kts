@@ -57,6 +57,7 @@ dependencies {
 
     // Auth0 Android SDK
     implementation(libs.auth0)
+    implementation(libs.kotlinx.coroutines.android)
 
     // Additional dependencies for Compose
     implementation(libs.androidx.compose.material.icons.extended)
