@@ -1,19 +1,34 @@
 package com.ks.app.easypasskey.ui.screens
 
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Login
 import androidx.compose.material.icons.filled.PersonAdd
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ks.app.easypasskey.R
 import com.ks.app.easypasskey.auth.AuthUiState
@@ -22,16 +37,16 @@ import com.ks.app.easypasskey.auth.AuthViewModel
 @Composable
 fun AuthScreen(
     authViewModel: AuthViewModel,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onSignupClick: () -> Unit,
+    onLoginClick: () -> Unit
 ) {
     val uiState by authViewModel.uiState.collectAsStateWithLifecycle()
 
     AuthScreenContent(
         uiState = uiState,
-        onLoginClick = authViewModel::login,
-        onSignupClick = authViewModel::signup,
-        onLogoutClick = authViewModel::logout,
-        onErrorDismiss = authViewModel::clearError,
+        onLoginClick = onLoginClick,
+        onSignupClick = onSignupClick,
         modifier = modifier
     )
 }
@@ -42,8 +57,6 @@ fun AuthScreenContent(
     uiState: AuthUiState,
     onLoginClick: () -> Unit,
     onSignupClick: () -> Unit,
-    onLogoutClick: () -> Unit,
-    onErrorDismiss: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Box(
@@ -81,23 +94,6 @@ fun AuthScreenContent(
                     textAlign = TextAlign.Center,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
-
-                Spacer(modifier = Modifier.height(32.dp))
-
-                Button(
-                    onClick = onLogoutClick,
-                    enabled = !uiState.isLoading,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    if (uiState.isLoading) {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(16.dp),
-                            strokeWidth = 2.dp
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                    }
-                    Text("Logout")
-                }
             }
         } else {
             // Non-authenticated state
@@ -170,25 +166,6 @@ fun AuthScreenContent(
                     Text("Login")
                 }
             }
-        }
-
-        // Error handling
-        uiState.errorMessage?.let { errorMessage ->
-            LaunchedEffect(errorMessage) {
-                // You can show a snackbar here if needed
-            }
-
-            // Simple error dialog
-            AlertDialog(
-                onDismissRequest = onErrorDismiss,
-                title = { Text("Authentication Error") },
-                text = { Text(errorMessage) },
-                confirmButton = {
-                    TextButton(onClick = onErrorDismiss) {
-                        Text("OK")
-                    }
-                }
-            )
         }
     }
 }

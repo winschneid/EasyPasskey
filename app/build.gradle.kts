@@ -18,7 +18,7 @@ android {
         versionName = "1.0"
 
         manifestPlaceholders["auth0Domain"] = "dev-ehtsyvs2lqdm1p5i.us.auth0.com"
-        manifestPlaceholders["auth0Scheme"] = "easypasskey"
+        manifestPlaceholders["auth0Scheme"] = "https"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
