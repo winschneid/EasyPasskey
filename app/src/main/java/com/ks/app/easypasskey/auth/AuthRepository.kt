@@ -13,34 +13,6 @@ import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
-// Coroutine extension for Auth0 WebAuthProvider
-private suspend fun WebAuthProvider.AuthenticationRequest.await(activity: ComponentActivity): Credentials {
-    return suspendCancellableCoroutine { continuation ->
-        start(activity, object : Callback<Credentials, AuthenticationException> {
-            override fun onSuccess(result: Credentials) {
-                continuation.resume(result)
-            }
-
-            override fun onFailure(error: AuthenticationException) {
-                continuation.resumeWithException(error)
-            }
-        })
-    }
-}
-
-private suspend fun WebAuthProvider.LogoutRequest.await(activity: ComponentActivity) {
-    return suspendCancellableCoroutine { continuation ->
-        start(activity, object : Callback<Void?, AuthenticationException> {
-            override fun onSuccess(result: Void?) {
-                continuation.resume(Unit)
-            }
-
-            override fun onFailure(error: AuthenticationException) {
-                continuation.resumeWithException(error)
-            }
-        })
-    }
-}
 
 interface AuthRepository {
     suspend fun login(): Result<Credentials>
@@ -66,12 +38,22 @@ class Auth0Repository(
     override suspend fun login(): Result<Credentials> {
         return try {
             val activity = requireActivity()
-            val credentials = WebAuthProvider
-                .login(auth0Instance)
-                .withScheme(context.getString(R.string.com_auth0_scheme))
-                .withScope("openid profile email offline_access")
-                .withParameters(mapOf("prompt" to "login"))
-                .await(activity)
+            val credentials = suspendCancellableCoroutine<Credentials> { continuation ->
+                WebAuthProvider
+                    .login(auth0Instance)
+                    .withScheme(context.getString(R.string.com_auth0_scheme))
+                    .withScope("openid profile email offline_access")
+                    .withParameters(mapOf("prompt" to "login"))
+                    .start(activity, object : Callback<Credentials, AuthenticationException> {
+                        override fun onSuccess(result: Credentials) {
+                            continuation.resume(result)
+                        }
+
+                        override fun onFailure(error: AuthenticationException) {
+                            continuation.resumeWithException(error)
+                        }
+                    })
+            }
             Result.success(credentials)
         } catch (e: Exception) {
             Result.failure(e)
@@ -81,12 +63,22 @@ class Auth0Repository(
     override suspend fun signup(): Result<Credentials> {
         return try {
             val activity = requireActivity()
-            val credentials = WebAuthProvider
-                .login(auth0Instance)
-                .withScheme(context.getString(R.string.com_auth0_scheme))
-                .withScope("openid profile email")
-                .withParameters(mapOf("prompt" to "login", "screen_hint" to "signup"))
-                .await(activity)
+            val credentials = suspendCancellableCoroutine<Credentials> { continuation ->
+                WebAuthProvider
+                    .login(auth0Instance)
+                    .withScheme(context.getString(R.string.com_auth0_scheme))
+                    .withScope("openid profile email")
+                    .withParameters(mapOf("prompt" to "login", "screen_hint" to "signup"))
+                    .start(activity, object : Callback<Credentials, AuthenticationException> {
+                        override fun onSuccess(result: Credentials) {
+                            continuation.resume(result)
+                        }
+
+                        override fun onFailure(error: AuthenticationException) {
+                            continuation.resumeWithException(error)
+                        }
+                    })
+            }
             Result.success(credentials)
         } catch (e: Exception) {
             Result.failure(e)
@@ -96,10 +88,20 @@ class Auth0Repository(
     override suspend fun logout(): Result<Unit> {
         return try {
             val activity = requireActivity()
-            WebAuthProvider
-                .logout(auth0Instance)
-                .withScheme(context.getString(R.string.com_auth0_scheme))
-                .await(activity)
+            suspendCancellableCoroutine<Unit> { continuation ->
+                WebAuthProvider
+                    .logout(auth0Instance)
+                    .withScheme(context.getString(R.string.com_auth0_scheme))
+                    .start(activity, object : Callback<Void?, AuthenticationException> {
+                        override fun onSuccess(result: Void?) {
+                            continuation.resume(Unit)
+                        }
+
+                        override fun onFailure(error: AuthenticationException) {
+                            continuation.resumeWithException(error)
+                        }
+                    })
+            }
             Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)
