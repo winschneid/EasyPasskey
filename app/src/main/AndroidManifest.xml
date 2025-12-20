@@ -25,17 +25,17 @@
             </intent-filter>
         </activity>
 
-        <!-- Auth0 -- Authentication callback -->
+        <!-- Auth0 - Authentication callback -->
         <activity
-            android:name="com.auth0.android.authentication.AuthenticationActivity"
+            android:name="com.auth0.android.provider.AuthenticationActivity"
             android:exported="true"
             android:launchMode="singleTask"
-            android:theme="@android:style/Theme.NoDisplay">
+            tools:replace="android:exported">
             <intent-filter>
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="@string/com_auth0_client_id"
+                <data android:scheme="@string/com_auth0_scheme"
                     android:host="@string/com_auth0_domain" />
             </intent-filter>
         </activity>

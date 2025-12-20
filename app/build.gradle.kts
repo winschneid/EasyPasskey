@@ -17,6 +17,9 @@ android {
         versionCode = 1
         versionName = "1.0"
 
+        manifestPlaceholders["auth0Domain"] = "dev-ehtsyvs2lqdm1p5i.us.auth0.com"
+        manifestPlaceholders["auth0Scheme"] = "easypasskey"
+
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
@@ -53,11 +56,11 @@ dependencies {
     implementation(libs.androidx.compose.material3)
 
     // Auth0 Android SDK
-    implementation("com.auth0.android:auth0:2.10.2")
+    implementation(libs.auth0)
 
     // Additional dependencies for Compose
-    implementation("androidx.compose.material:material-icons-extended")
-    implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.7.0")
+    implementation(libs.androidx.compose.material.icons.extended)
+    implementation(libs.androidx.lifecycle.viewmodel.compose)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
