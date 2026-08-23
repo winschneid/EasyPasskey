@@ -1,5 +1,7 @@
 package com.ks.app.easypasskey
 
+import android.content.Context
+import android.content.Intent
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -9,36 +11,40 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.ks.app.easypasskey.auth.AuthViewModel
-import com.ks.app.easypasskey.ui.screens.AuthScreen
+import com.ks.app.easypasskey.auth.nosdk.WebViewAuthViewModel
+import com.ks.app.easypasskey.ui.screens.WebViewAuthScreen
 import com.ks.app.easypasskey.ui.theme.EasyPasskeyTheme
 import dagger.hilt.android.AndroidEntryPoint
 
+/**
+ * Auth0 SDK を使わない WebView ベースの認証画面。
+ * 既存の MainActivity(SDK 版)とは独立した実験用の別画面。
+ */
 @AndroidEntryPoint
-class MainActivity : ComponentActivity() {
+class WebViewAuthActivity : ComponentActivity() {
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
             EasyPasskeyTheme {
                 Scaffold(modifier = Modifier.fillMaxSize()) { innerPadding ->
-                    val authViewModel: AuthViewModel = viewModel()
-
-                    AuthScreen(
-                        authViewModel = authViewModel,
-                        onSignupClick = { authViewModel.signup(this) },
-                        onLoginClick = { authViewModel.login(this) },
-                        onWebViewSignupClick = {
-                            startActivity(WebViewAuthActivity.createIntent(this, isSignup = true))
-                        },
-                        onWebViewLoginClick = {
-                            startActivity(WebViewAuthActivity.createIntent(this, isSignup = false))
-                        },
-                        onLogoutClick = { authViewModel.logout() },
+                    val authViewModel: WebViewAuthViewModel = viewModel()
+                    WebViewAuthScreen(
+                        viewModel = authViewModel,
+                        onClose = { finish() },
                         modifier = Modifier.padding(innerPadding)
                     )
                 }
             }
         }
+    }
+
+    companion object {
+        const val EXTRA_IS_SIGNUP = "extra_is_signup"
+
+        fun createIntent(context: Context, isSignup: Boolean): Intent =
+            Intent(context, WebViewAuthActivity::class.java)
+                .putExtra(EXTRA_IS_SIGNUP, isSignup)
     }
 }
