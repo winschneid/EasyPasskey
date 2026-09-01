@@ -8,3 +8,9 @@
 .externalNativeBuild
 .cxx
 local.properties
+
+# 署名鍵のパスワード（keystore.properties.example をコピーして使う）
+/keystore.properties
+
+# Android Studio の署名済み出力
+/app/release/
