@@ -28,11 +28,23 @@ class MainActivity : ComponentActivity() {
                         authViewModel = authViewModel,
                         onSignupClick = { authViewModel.signup(this) },
                         onLoginClick = { authViewModel.login(this) },
-                        onWebViewSignupClick = {
-                            startActivity(WebViewAuthActivity.createIntent(this, isSignup = true))
+                        onWebViewSignupClick = { nativeWebAuthn ->
+                            startActivity(
+                                WebViewAuthActivity.createIntent(
+                                    this,
+                                    isSignup = true,
+                                    nativeWebAuthn = nativeWebAuthn
+                                )
+                            )
                         },
-                        onWebViewLoginClick = {
-                            startActivity(WebViewAuthActivity.createIntent(this, isSignup = false))
+                        onWebViewLoginClick = { nativeWebAuthn ->
+                            startActivity(
+                                WebViewAuthActivity.createIntent(
+                                    this,
+                                    isSignup = false,
+                                    nativeWebAuthn = nativeWebAuthn
+                                )
+                            )
                         },
                         onLogoutClick = { authViewModel.logout() },
                         modifier = Modifier.padding(innerPadding)

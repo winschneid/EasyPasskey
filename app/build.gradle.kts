@@ -74,6 +74,9 @@ dependencies {
     // Token persistence
     implementation(libs.androidx.datastore.preferences)
 
+    // WebView の WebAuthn ネイティブ対応の有効化と、clientDataJSON を覗くための probe に使う
+    implementation(libs.androidx.webkit)
+
     // Additional dependencies for Compose
     implementation(libs.androidx.compose.material.icons.extended)
     implementation(libs.androidx.lifecycle.viewmodel.compose)

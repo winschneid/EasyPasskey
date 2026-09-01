@@ -14,6 +14,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.ks.app.easypasskey.auth.nosdk.WebViewAuthViewModel
 import com.ks.app.easypasskey.ui.screens.WebViewAuthScreen
 import com.ks.app.easypasskey.ui.theme.EasyPasskeyTheme
+import com.ks.app.easypasskey.webauthn.WebAuthnMode
 import dagger.hilt.android.AndroidEntryPoint
 
 /**
@@ -33,7 +34,10 @@ class WebViewAuthActivity : ComponentActivity() {
                     WebViewAuthScreen(
                         viewModel = authViewModel,
                         onClose = { finish() },
-                        modifier = Modifier.padding(innerPadding)
+                        modifier = Modifier.padding(innerPadding),
+                        webAuthnMode = WebAuthnMode.of(
+                            intent.getBooleanExtra(EXTRA_NATIVE_WEBAUTHN, true)
+                        )
                     )
                 }
             }
@@ -43,8 +47,16 @@ class WebViewAuthActivity : ComponentActivity() {
     companion object {
         const val EXTRA_IS_SIGNUP = "extra_is_signup"
 
-        fun createIntent(context: Context, isSignup: Boolean): Intent =
+        /** WebView のネイティブ WebAuthn 対応を有効にするか。origin の比較用に切り替える。 */
+        const val EXTRA_NATIVE_WEBAUTHN = "extra_native_webauthn"
+
+        fun createIntent(
+            context: Context,
+            isSignup: Boolean,
+            nativeWebAuthn: Boolean = true
+        ): Intent =
             Intent(context, WebViewAuthActivity::class.java)
                 .putExtra(EXTRA_IS_SIGNUP, isSignup)
+                .putExtra(EXTRA_NATIVE_WEBAUTHN, nativeWebAuthn)
     }
 }

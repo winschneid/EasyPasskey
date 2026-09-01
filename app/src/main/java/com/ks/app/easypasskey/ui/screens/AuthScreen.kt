@@ -3,6 +3,7 @@ package com.ks.app.easypasskey.ui.screens
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -20,9 +21,13 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
@@ -40,8 +45,8 @@ fun AuthScreen(
     modifier: Modifier = Modifier,
     onSignupClick: () -> Unit,
     onLoginClick: () -> Unit,
-    onWebViewSignupClick: () -> Unit = {},
-    onWebViewLoginClick: () -> Unit = {},
+    onWebViewSignupClick: (nativeWebAuthn: Boolean) -> Unit = {},
+    onWebViewLoginClick: (nativeWebAuthn: Boolean) -> Unit = {},
     onLogoutClick: () -> Unit = {}
 ) {
     val uiState by authViewModel.uiState.collectAsStateWithLifecycle()
@@ -64,10 +69,13 @@ fun AuthScreenContent(
     onLoginClick: () -> Unit,
     onSignupClick: () -> Unit,
     modifier: Modifier = Modifier,
-    onWebViewSignupClick: () -> Unit = {},
-    onWebViewLoginClick: () -> Unit = {},
+    onWebViewSignupClick: (nativeWebAuthn: Boolean) -> Unit = {},
+    onWebViewLoginClick: (nativeWebAuthn: Boolean) -> Unit = {},
     onLogoutClick: () -> Unit = {}
 ) {
+    // WebView のネイティブ WebAuthn 対応の ON/OFF。clientDataJSON の origin を比較するために切り替える。
+    var nativeWebAuthn by rememberSaveable { mutableStateOf(true) }
+
     Box(
         modifier = modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
@@ -192,10 +200,25 @@ fun AuthScreenContent(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
 
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text(
+                        text = "native WebAuthn (FOR_APP)",
+                        style = MaterialTheme.typography.bodyMedium,
+                        modifier = Modifier.weight(1f)
+                    )
+                    Switch(
+                        checked = nativeWebAuthn,
+                        onCheckedChange = { nativeWebAuthn = it }
+                    )
+                }
+
                 Spacer(modifier = Modifier.height(8.dp))
 
                 OutlinedButton(
-                    onClick = onWebViewSignupClick,
+                    onClick = { onWebViewSignupClick(nativeWebAuthn) },
                     enabled = !uiState.isLoading,
                     modifier = Modifier.fillMaxWidth()
                 ) {
@@ -211,7 +234,7 @@ fun AuthScreenContent(
                 Spacer(modifier = Modifier.height(8.dp))
 
                 OutlinedButton(
-                    onClick = onWebViewLoginClick,
+                    onClick = { onWebViewLoginClick(nativeWebAuthn) },
                     enabled = !uiState.isLoading,
                     modifier = Modifier.fillMaxWidth()
                 ) {

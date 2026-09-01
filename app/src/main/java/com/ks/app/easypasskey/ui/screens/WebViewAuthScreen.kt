@@ -6,6 +6,7 @@ import android.webkit.WebResourceRequest
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -15,6 +16,8 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.ErrorOutline
@@ -25,50 +28,102 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ks.app.easypasskey.auth.nosdk.WebViewAuthState
 import com.ks.app.easypasskey.auth.nosdk.WebViewAuthViewModel
 import com.ks.app.easypasskey.domain.model.AuthCredentials
+import com.ks.app.easypasskey.webauthn.WebAuthnMode
+import com.ks.app.easypasskey.webauthn.installPasskeyProbe
 import java.text.DateFormat
 import java.util.Date
+
+/** probe のログを画面に残す行数。 */
+private const val MAX_PROBE_LOG_LINES = 60
 
 @Composable
 fun WebViewAuthScreen(
     viewModel: WebViewAuthViewModel,
     onClose: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    webAuthnMode: WebAuthnMode = WebAuthnMode.NATIVE_FOR_APP
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
 
-    Box(modifier = modifier.fillMaxSize()) {
-        when (val current = state) {
-            is WebViewAuthState.Authorizing -> AuthWebView(
-                authorizeUrl = current.authorizeUrl,
-                onNavigation = viewModel::onNavigation,
-                onClose = onClose
-            )
+    // probe のログは WebView がアンマウントされた後（トークン交換中・成功後）も残したいので、
+    // 画面全体のスコープで持つ。
+    val probeLog = remember { mutableStateListOf<String>() }
+    val appendProbeLog: (String) -> Unit = { line ->
+        probeLog.add(line)
+        while (probeLog.size > MAX_PROBE_LOG_LINES) probeLog.removeAt(0)
+    }
 
-            is WebViewAuthState.ExchangingToken -> LoadingContent("Exchanging token…")
+    Column(modifier = modifier.fillMaxSize()) {
+        Box(modifier = Modifier.weight(1f)) {
+            when (val current = state) {
+                is WebViewAuthState.Authorizing -> AuthWebView(
+                    authorizeUrl = current.authorizeUrl,
+                    onNavigation = viewModel::onNavigation,
+                    onClose = onClose,
+                    webAuthnMode = webAuthnMode,
+                    onProbeLog = appendProbeLog
+                )
 
-            is WebViewAuthState.Success -> SuccessContent(
-                credentials = current.credentials,
-                onClose = onClose
-            )
+                is WebViewAuthState.ExchangingToken -> LoadingContent("Exchanging token…")
 
-            is WebViewAuthState.Error -> ErrorContent(
-                message = current.message,
-                onRetry = viewModel::restart,
-                onClose = onClose
+                is WebViewAuthState.Success -> SuccessContent(
+                    credentials = current.credentials,
+                    onClose = onClose
+                )
+
+                is WebViewAuthState.Error -> ErrorContent(
+                    message = current.message,
+                    onRetry = viewModel::restart,
+                    onClose = onClose
+                )
+            }
+        }
+
+        ProbeLogPanel(lines = probeLog)
+    }
+}
+
+/** 観測結果をそのまま撮れるように画面下部に出す。Logcat にも同じ内容が出ている。 */
+@Composable
+private fun ProbeLogPanel(lines: List<String>) {
+    val scrollState = rememberScrollState()
+    // 行が増えて maxValue が動いた後に追従させる。lines.size をキーにすると
+    // レイアウト前の古い maxValue まで飛んでしまう。
+    LaunchedEffect(scrollState.maxValue) { scrollState.animateScrollTo(scrollState.maxValue) }
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(180.dp)
+            .background(Color.Black)
+            .verticalScroll(scrollState)
+            .padding(8.dp)
+    ) {
+        lines.forEach { line ->
+            Text(
+                text = line,
+                color = Color.LightGray,
+                fontFamily = FontFamily.Monospace,
+                fontSize = 10.sp
             )
         }
     }
@@ -79,7 +134,9 @@ fun WebViewAuthScreen(
 private fun AuthWebView(
     authorizeUrl: String,
     onNavigation: (String) -> Boolean,
-    onClose: () -> Unit
+    onClose: () -> Unit,
+    webAuthnMode: WebAuthnMode,
+    onProbeLog: (String) -> Unit
 ) {
     var webView by remember { mutableStateOf<WebView?>(null) }
     var canGoBack by remember { mutableStateOf(false) }
@@ -97,6 +154,12 @@ private fun AuthWebView(
                 settings.javaScriptEnabled = true
                 settings.domStorageEnabled = true
                 CookieManager.getInstance().setAcceptCookie(true)
+
+                // loadUrl の前に差し込む。ページ側のスクリプトより先に
+                // navigator.credentials.create を掴む必要がある。
+                // ログの反映は post で遅らせる。factory は composition 中に走るので、
+                // ここで直接 state を書き換えると同じ composition の読み取りと衝突する。
+                installPasskeyProbe(webAuthnMode) { line -> post { onProbeLog(line) } }
 
                 webViewClient = object : WebViewClient() {
                     override fun shouldOverrideUrlLoading(
