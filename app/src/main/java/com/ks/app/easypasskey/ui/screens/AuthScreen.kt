@@ -15,6 +15,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.automirrored.filled.Login
 import androidx.compose.material.icons.filled.PersonAdd
+import androidx.compose.material.icons.filled.Science
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -47,6 +48,7 @@ fun AuthScreen(
     onLoginClick: () -> Unit,
     onWebViewSignupClick: (nativeWebAuthn: Boolean) -> Unit = {},
     onWebViewLoginClick: (nativeWebAuthn: Boolean) -> Unit = {},
+    onProbePageClick: (nativeWebAuthn: Boolean) -> Unit = {},
     onLogoutClick: () -> Unit = {}
 ) {
     val uiState by authViewModel.uiState.collectAsStateWithLifecycle()
@@ -57,6 +59,7 @@ fun AuthScreen(
         onSignupClick = onSignupClick,
         onWebViewSignupClick = onWebViewSignupClick,
         onWebViewLoginClick = onWebViewLoginClick,
+        onProbePageClick = onProbePageClick,
         onLogoutClick = onLogoutClick,
         modifier = modifier
     )
@@ -71,6 +74,7 @@ fun AuthScreenContent(
     modifier: Modifier = Modifier,
     onWebViewSignupClick: (nativeWebAuthn: Boolean) -> Unit = {},
     onWebViewLoginClick: (nativeWebAuthn: Boolean) -> Unit = {},
+    onProbePageClick: (nativeWebAuthn: Boolean) -> Unit = {},
     onLogoutClick: () -> Unit = {}
 ) {
     // WebView のネイティブ WebAuthn 対応の ON/OFF。clientDataJSON の origin を比較するために切り替える。
@@ -245,6 +249,21 @@ fun AuthScreenContent(
                     )
                     Spacer(modifier = Modifier.width(8.dp))
                     Text("Login (WebView)")
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                OutlinedButton(
+                    onClick = { onProbePageClick(nativeWebAuthn) },
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Science,
+                        contentDescription = null,
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("origin probe (Auth0 を経由しない)")
                 }
 
                 if (uiState.errorMessage != null) {

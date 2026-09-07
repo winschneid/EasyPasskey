@@ -30,6 +30,16 @@ enum class WebAuthnMode(val supportLevel: Int) {
 const val PROBE_LOG_TAG = "PasskeyProbe"
 
 /**
+ * origin 実測用に自前で立てた最小 RP。
+ *
+ * Auth0 のテナント既定ドメインが返す assetlinks には `delegate_permission/common.get_login_creds`
+ * が無いため、ceremony が Digital Asset Links の照合で落ちて clientDataJSON まで届かない。
+ * こちらは `https://winschneid.github.io/.well-known/assetlinks.json` に release と debug
+ * 両方の署名指紋を登録してあるので、debug ビルドのまま ceremony を通せる。
+ */
+const val PROBE_PAGE_URL = "https://winschneid.github.io/passkey-probe/"
+
+/**
  * ネイティブ WebAuthn を [mode] に設定し、[PasskeyProbe] を差し込む。
  *
  * WebView を作った直後、`loadUrl` の前に呼ぶこと。

@@ -46,6 +46,14 @@ class MainActivity : ComponentActivity() {
                                 )
                             )
                         },
+                        onProbePageClick = { nativeWebAuthn ->
+                            startActivity(
+                                WebViewAuthActivity.createProbeIntent(
+                                    this,
+                                    nativeWebAuthn = nativeWebAuthn
+                                )
+                            )
+                        },
                         onLogoutClick = { authViewModel.logout() },
                         modifier = Modifier.padding(innerPadding)
                     )

@@ -29,6 +29,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateListOf
 import androidx.compose.runtime.mutableStateOf
@@ -55,6 +56,20 @@ import java.util.Date
 /** probe のログを画面に残す行数。 */
 private const val MAX_PROBE_LOG_LINES = 60
 
+/**
+ * probe のログ。WebView がアンマウントされた後（トークン交換中・成功後）も残したいので、
+ * WebView ではなく画面全体のスコープで持つ。
+ */
+@Stable
+private class ProbeLog {
+    val lines = mutableStateListOf<String>()
+
+    fun append(line: String) {
+        lines.add(line)
+        while (lines.size > MAX_PROBE_LOG_LINES) lines.removeAt(0)
+    }
+}
+
 @Composable
 fun WebViewAuthScreen(
     viewModel: WebViewAuthViewModel,
@@ -64,13 +79,7 @@ fun WebViewAuthScreen(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
 
-    // probe のログは WebView がアンマウントされた後（トークン交換中・成功後）も残したいので、
-    // 画面全体のスコープで持つ。
-    val probeLog = remember { mutableStateListOf<String>() }
-    val appendProbeLog: (String) -> Unit = { line ->
-        probeLog.add(line)
-        while (probeLog.size > MAX_PROBE_LOG_LINES) probeLog.removeAt(0)
-    }
+    val probeLog = remember { ProbeLog() }
 
     Column(modifier = modifier.fillMaxSize()) {
         Box(modifier = Modifier.weight(1f)) {
@@ -80,7 +89,7 @@ fun WebViewAuthScreen(
                     onNavigation = viewModel::onNavigation,
                     onClose = onClose,
                     webAuthnMode = webAuthnMode,
-                    onProbeLog = appendProbeLog
+                    onProbeLog = probeLog::append
                 )
 
                 is WebViewAuthState.ExchangingToken -> LoadingContent("Exchanging token…")
@@ -98,7 +107,39 @@ fun WebViewAuthScreen(
             }
         }
 
-        ProbeLogPanel(lines = probeLog)
+        ProbeLogPanel(lines = probeLog.lines)
+    }
+}
+
+/**
+ * Auth0 を経由せず、任意の URL を probe 付きで開くだけの画面。
+ *
+ * Auth0 のテナント既定ドメインが返す assetlinks には `get_login_creds` が無く、
+ * ceremony が Digital Asset Links の照合で落ちて clientDataJSON まで届かない。
+ * origin を実測するには、自前で assetlinks を置いた RP を開く必要がある。
+ */
+@Composable
+fun ProbeWebViewScreen(
+    url: String,
+    onClose: () -> Unit,
+    modifier: Modifier = Modifier,
+    webAuthnMode: WebAuthnMode = WebAuthnMode.NATIVE_FOR_APP
+) {
+    val probeLog = remember { ProbeLog() }
+
+    Column(modifier = modifier.fillMaxSize()) {
+        Box(modifier = Modifier.weight(1f)) {
+            AuthWebView(
+                authorizeUrl = url,
+                // リダイレクトを横取りする相手がいないので、全部 WebView に任せる。
+                onNavigation = { false },
+                onClose = onClose,
+                webAuthnMode = webAuthnMode,
+                onProbeLog = probeLog::append
+            )
+        }
+
+        ProbeLogPanel(lines = probeLog.lines)
     }
 }
 
