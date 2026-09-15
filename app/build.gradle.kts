@@ -2,6 +2,9 @@ plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.android)
     alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.kotlin.serialization)
+    alias(libs.plugins.ksp)
+    alias(libs.plugins.hilt)
 }
 
 android {
@@ -58,6 +61,18 @@ dependencies {
     // Auth0 Android SDK
     implementation(libs.auth0)
     implementation(libs.kotlinx.coroutines.android)
+
+    // DI (Hilt)
+    implementation(libs.hilt.android)
+    ksp(libs.hilt.compiler)
+
+    // Network (Retrofit + kotlinx.serialization)
+    implementation(libs.retrofit)
+    implementation(libs.retrofit.converter.kotlinx.serialization)
+    implementation(libs.kotlinx.serialization.json)
+
+    // Token persistence
+    implementation(libs.androidx.datastore.preferences)
 
     // Additional dependencies for Compose
     implementation(libs.androidx.compose.material.icons.extended)

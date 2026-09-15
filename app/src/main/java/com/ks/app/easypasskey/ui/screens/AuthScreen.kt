@@ -12,7 +12,7 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
-import androidx.compose.material.icons.filled.Login
+import androidx.compose.material.icons.automirrored.filled.Login
 import androidx.compose.material.icons.filled.PersonAdd
 import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
@@ -39,7 +39,10 @@ fun AuthScreen(
     authViewModel: AuthViewModel,
     modifier: Modifier = Modifier,
     onSignupClick: () -> Unit,
-    onLoginClick: () -> Unit
+    onLoginClick: () -> Unit,
+    onWebViewSignupClick: () -> Unit = {},
+    onWebViewLoginClick: () -> Unit = {},
+    onLogoutClick: () -> Unit = {}
 ) {
     val uiState by authViewModel.uiState.collectAsStateWithLifecycle()
 
@@ -47,6 +50,9 @@ fun AuthScreen(
         uiState = uiState,
         onLoginClick = onLoginClick,
         onSignupClick = onSignupClick,
+        onWebViewSignupClick = onWebViewSignupClick,
+        onWebViewLoginClick = onWebViewLoginClick,
+        onLogoutClick = onLogoutClick,
         modifier = modifier
     )
 }
@@ -57,7 +63,10 @@ fun AuthScreenContent(
     uiState: AuthUiState,
     onLoginClick: () -> Unit,
     onSignupClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onWebViewSignupClick: () -> Unit = {},
+    onWebViewLoginClick: () -> Unit = {},
+    onLogoutClick: () -> Unit = {}
 ) {
     Box(
         modifier = modifier.fillMaxSize(),
@@ -94,6 +103,15 @@ fun AuthScreenContent(
                     textAlign = TextAlign.Center,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
+
+                Spacer(modifier = Modifier.height(32.dp))
+
+                OutlinedButton(
+                    onClick = onLogoutClick,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Text("Logout")
+                }
             }
         } else {
             // Non-authenticated state
@@ -157,13 +175,63 @@ fun AuthScreenContent(
                         Spacer(modifier = Modifier.width(8.dp))
                     } else {
                         Icon(
-                            imageVector = Icons.Default.Login,
+                            imageVector = Icons.AutoMirrored.Filled.Login,
                             contentDescription = null,
                             modifier = Modifier.size(20.dp)
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                     }
                     Text("Login")
+                }
+
+                Spacer(modifier = Modifier.height(32.dp))
+
+                Text(
+                    text = "Without SDK (WebView)",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                OutlinedButton(
+                    onClick = onWebViewSignupClick,
+                    enabled = !uiState.isLoading,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.PersonAdd,
+                        contentDescription = null,
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Sign Up (WebView)")
+                }
+
+                Spacer(modifier = Modifier.height(8.dp))
+
+                OutlinedButton(
+                    onClick = onWebViewLoginClick,
+                    enabled = !uiState.isLoading,
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.Login,
+                        contentDescription = null,
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Login (WebView)")
+                }
+
+                if (uiState.errorMessage != null) {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        text = uiState.errorMessage,
+                        style = MaterialTheme.typography.bodyMedium,
+                        textAlign = TextAlign.Center,
+                        color = MaterialTheme.colorScheme.error
+                    )
                 }
             }
         }
